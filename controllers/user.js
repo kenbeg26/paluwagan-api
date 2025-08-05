@@ -67,3 +67,16 @@ module.exports.getProfile = async (req, res) => {
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
+
+// Set user as active
+module.exports.setUserActive = (req, res) => {
+  User.findByIdAndUpdate(req.params.userId, { isActive: true }, { new: true })
+    .then(user => {
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.status(200).json({ success: true, message: "User activated successfully" });
+
+    })
+    .catch(error => errorHandler(error, req, res));
+}
