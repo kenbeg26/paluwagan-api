@@ -12,6 +12,8 @@ router.post("/login", userController.loginUser);
 
 router.get("/details", verify, userController.getProfile);
 
+router.get("/all-users", verify, verifyAdmin, userController.getAllUser);
+
 router.patch("/:userId/set-user-active", verify, verifyAdmin, userController.setUserActive);
 
 

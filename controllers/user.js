@@ -80,3 +80,13 @@ module.exports.setUserActive = (req, res) => {
     })
     .catch(error => errorHandler(error, req, res));
 }
+
+// Retrieve all Users (Admin only)
+module.exports.getAllUser = (req, res) => {
+  User.find({})
+    .then(users => {
+      console.log("Users found:", users);
+      res.status(200).json(users);
+    })
+    .catch(error => errorHandler(error, req, res));
+};
