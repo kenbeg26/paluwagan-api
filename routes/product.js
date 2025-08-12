@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.post("/", verify, verifyAdmin, productController.addProduct);
 
-// router.get("/all", verify, verifyAdmin, productController.getAllProducts);
+router.get("/all", verify, verifyAdmin, productController.getAllProducts);
 
 //router.get("/active", productController.getActiveProducts);
 

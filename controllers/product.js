@@ -3,7 +3,7 @@ const Product = require("../models/Product");
 const auth = require("../auth");
 const { errorHandler } = auth;
 
-// Create Product
+// Create Product (Admin only)
 module.exports.addProduct = (req, res) => {
   const { name, amount, number } = req.body;
 
@@ -26,6 +26,16 @@ module.exports.addProduct = (req, res) => {
         isOccupied: product.isOccupied,
         isActive: product.isActive
       })
+    })
+    .catch(error => errorHandler(error, req, res));
+}
+
+// Retrieve all products (Admin only)
+module.exports.getAllProducts = (req, res) => {
+  Product.find({})
+    .then(products => {
+      console.log("Products found: ", products);
+      res.status(200).json(products);
     })
     .catch(error => errorHandler(error, req, res));
 }
