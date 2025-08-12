@@ -19,6 +19,13 @@ module.exports.addProduct = (req, res) => {
 
   newProduct.save()
     .then(product => {
-      res.status(201)
+      res.status(201).json({
+        name: product.name,
+        amount: product.amount,
+        number: product.number,
+        isOccupied: product.isOccupied,
+        isActive: product.isActive
+      })
     })
+    .catch(error => errorHandler(error, req, res));
 }

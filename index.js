@@ -6,6 +6,7 @@ const cors = require("cors");
 
 // Routes
 const userRoutes = require("./routes/user");
+const productRoutes = require("./routes/product");
 
 require('dotenv').config();
 
@@ -34,6 +35,7 @@ mongoose.connection.once('open', () => console.log("Now connected to MongoDB Atl
 
 // Backend Routes
 app.use("/users", userRoutes);
+app.use("/product", productRoutes);
 
 if (require.main === module) {
   app.listen(process.env.PORT || 3000, () => {

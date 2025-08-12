@@ -17,11 +17,11 @@ const productSchema = new mongoose.Schema({
   },
   isOccupied: {
     type: Boolean,
-    required: [true, 'Occupied is required']
+    default: false
   },
   isActive: {
     type: Boolean,
-    required: [true, 'Is Active is required']
+    default: false
   }
 });
 
