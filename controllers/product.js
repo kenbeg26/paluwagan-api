@@ -40,9 +40,21 @@ module.exports.getAllProducts = (req, res) => {
     .catch(error => errorHandler(error, req, res));
 };
 
-// Retrieve all active products
+// Retrieve all active products (public)
 module.exports.getActiveProducts = (req, res) => {
   Product.find({ isActive: true })
     .then(products => res.status(200).json(products))
     .catch(error => (error, req, res));
 };
+
+// Retrieve a single product (public)
+module.exports.getProductById = (req, res) => {
+  Product.findById(req.params.productId)
+    .then(product => {
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.status(200).json({ success: true, data: product });
+    })
+    .catch(error => errorHandler(error, req, res));
+}
