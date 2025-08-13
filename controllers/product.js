@@ -28,7 +28,7 @@ module.exports.addProduct = (req, res) => {
       })
     })
     .catch(error => errorHandler(error, req, res));
-}
+};
 
 // Retrieve all products (Admin only)
 module.exports.getAllProducts = (req, res) => {
@@ -38,4 +38,11 @@ module.exports.getAllProducts = (req, res) => {
       res.status(200).json(products);
     })
     .catch(error => errorHandler(error, req, res));
-}
+};
+
+// Retrieve all active products
+module.exports.getActiveProducts = (req, res) => {
+  Product.find({ isActive: true })
+    .then(products => res.status(200).json(products))
+    .catch(error => (error, req, res));
+};

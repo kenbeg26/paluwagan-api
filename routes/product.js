@@ -10,7 +10,7 @@ router.post("/", verify, verifyAdmin, productController.addProduct);
 
 router.get("/all", verify, verifyAdmin, productController.getAllProducts);
 
-//router.get("/active", productController.getActiveProducts);
+router.get("/active", productController.getActiveProducts);
 
 //router.get("/:productId", productController.getProductById);
 
