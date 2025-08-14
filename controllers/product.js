@@ -58,3 +58,25 @@ module.exports.getProductById = (req, res) => {
     })
     .catch(error => errorHandler(error, req, res));
 }
+
+// Update Product Info (Admin only)
+module.exports.updateProduct = (req, res) => {
+  const productUpdates = req.body;
+
+  Product.findByIdAndUpdate(
+    req.params.productId,
+    { ...productUpdates },
+    { new: true }
+  )
+    .then(updatedProduct => {
+      if (!updatedProduct) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.status(200).json({
+        success: true,
+        message: "Product updated successfully",
+        data: updatedProduct
+      });
+    })
+    .catch(error => errorHandler(error, req, res));
+};
