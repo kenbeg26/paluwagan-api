@@ -16,6 +16,8 @@ router.get("/:productId", productController.getProductById);
 
 router.patch("/:productId/update", verify, verifyAdmin, productController.updateProduct);
 
+router.patch("/:productId/archive", verify, verifyAdmin, productController.archiveProduct);
+
 
 
 

@@ -80,3 +80,25 @@ module.exports.updateProduct = (req, res) => {
     })
     .catch(error => errorHandler(error, req, res));
 };
+
+// Archive Product (Admin only)
+module.exports.archiveProduct = async (req, res) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.productId,
+      { isActive: false },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.json({
+      message: "Product archived successfully",
+      product: updatedProduct
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
