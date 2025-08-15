@@ -102,3 +102,15 @@ module.exports.archiveProduct = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Activate Product (Admin only)
+module.exports.activateProduct = (req, res) => {
+  Product.findByIdAndUpdate(req.params.productId, { isActive: true }, { new: true })
+    .then(product => {
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.status(200).json({ success: true, message: "Product activated successfully" });
+    })
+    .catch(error => errorHandler(error, req, res));
+}
