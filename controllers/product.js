@@ -5,14 +5,15 @@ const { errorHandler } = auth;
 
 // Create Product (Admin only)
 module.exports.addProduct = (req, res) => {
-  const { name, amount, number } = req.body;
+  const { name, category, amount, number } = req.body;
 
-  if (!name || !amount || !number) {
-    return res.status(400).json({ error: "All fields (name, amount, number) are required" });
+  if (!name || !category || !amount || !number) {
+    return res.status(400).json({ error: "All fields (name, category, amount, number) are required" });
   }
 
   const newProduct = new Product({
     name,
+    category,
     amount,
     number
   });
@@ -21,6 +22,7 @@ module.exports.addProduct = (req, res) => {
     .then(product => {
       res.status(201).json({
         name: product.name,
+        category: product.category,
         amount: product.amount,
         number: product.number,
         isOccupied: product.isOccupied,

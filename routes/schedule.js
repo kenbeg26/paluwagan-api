@@ -6,10 +6,8 @@ const { verify, verifyAdmin } = require("../auth");
 // Routing Component
 const router = express.Router();
 
-router.post('/checkout', verify, scheduleController.createSchedule);
+router.get("/get-schedule", verify, scheduleController.getSchedule);
 
-//router.get('/my-schedule', verify, scheduleController.retrieveSchedule);
-
-//router.get('/all-schedule', verify, verifyAdmin, scheduleController.retrieveAllSchedules);
+router.post("/pick-schedule", verify, scheduleController.pickSchedule);
 
 module.exports = router;
