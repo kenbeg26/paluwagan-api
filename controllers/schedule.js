@@ -58,3 +58,14 @@ module.exports.pickSchedule = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+module.exports.getAllSchedule = (req, res) => {
+  // Fetch all orders
+  Schedule.find()
+    .then(orders => {
+      res.status(200).json({ orders });
+    })
+    .catch(error => {
+      res.status(500).json({ message: 'Error retrievving orders', error: error.message });
+    });
+};

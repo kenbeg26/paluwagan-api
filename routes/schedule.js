@@ -10,4 +10,6 @@ const router = express.Router();
 
 router.post("/pick-schedule", verify, scheduleController.pickSchedule);
 
+router.get("/get-all-schedule", verify, scheduleController.getAllSchedule);
+
 module.exports = router;
