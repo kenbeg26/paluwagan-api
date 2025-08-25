@@ -12,7 +12,7 @@ const scheduleRoutes = require("./routes/schedule");
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 const corsOptions = {
   origin: [
@@ -40,8 +40,8 @@ app.use("/product", productRoutes);
 app.use("/schedule", scheduleRoutes);
 
 if (require.main === module) {
-  app.listen(process.env.PORT || 3000, () => {
-    console.log(`API is now online on port ${process.env.PORT || 3000}`)
+  app.listen(process.env.PORT || 4000, () => {
+    console.log(`API is now online on port ${process.env.PORT || 4000}`)
   });
 }
 
