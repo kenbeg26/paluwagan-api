@@ -1,6 +1,5 @@
 // Dependencies and Modules
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
 const Schedule = require("../models/Schedule");
 const Product = require("../models/Product");
 const auth = require("../auth");
@@ -26,31 +25,52 @@ module.exports.pickSchedule = async (req, res) => {
     const randomIndex = Math.floor(Math.random() * availableProducts.length);
     const chosenProduct = availableProducts[randomIndex];
 
-    //4. Create schedule for the user
-    const scheduleData = {
-      userId: new mongoose.Types.ObjectId(userId),
-      scheduleOrdered: [{
-        productId: chosenProduct._id,
-        name: chosenProduct.name,
-        amount: chosenProduct.amount,
-        number: chosenProduct.number,
-      }],
-      totalAmount: chosenProduct.amount,
-      status: 'pending'
-    };
+    // 4. Build scheduleOrdered array (supports multiple products in future)
+    const scheduleOrdered = [
+      { productId: chosenProduct._id }
+    ];
 
-    const newSchedule = new Schedule(scheduleData);
+    // 5. Calculate total amount
+    const totalAmount = chosenProduct.amount * 10; // sum of all chosen products
+    // If multiple: scheduleOrdered.reduce((sum, item) => sum + item.amount, 0);
+
+    // 6. Create schedule
+    const newSchedule = new Schedule({
+      userId: new mongoose.Types.ObjectId(userId),
+      scheduleOrdered,
+      totalAmount,
+      status: 'pending'
+    });
+
     await newSchedule.save();
 
-    // 5. Update product as occupied
+    // 7. Update product as occupied
     chosenProduct.isOccupied = true;
     await chosenProduct.save();
 
-    // 6. Respond success
+    // 8. Populate product details for response
+    await newSchedule.populate('scheduleOrdered.productId', 'name category amount number');
+
+    // 9. Respond success
     return res.status(201).json({
       message: "Product successfully assigned!",
-      product: chosenProduct,
-      schedule: newSchedule
+      schedule: {
+        _id: newSchedule._id,
+        userId: newSchedule.userId,
+        totalAmount: newSchedule.totalAmount,
+        status: newSchedule.status,
+        scheduleOrdered: newSchedule.scheduleOrdered.map(item => ({
+          _id: item._id,
+          status: item.status,
+          product: {
+            _id: item.productId._id,
+            name: item.productId.name,
+            category: item.productId.category,
+            amount: item.productId.amount,
+            number: item.productId.number
+          }
+        }))
+      }
     });
 
   } catch (error) {
@@ -59,13 +79,15 @@ module.exports.pickSchedule = async (req, res) => {
   }
 };
 
-module.exports.getAllSchedule = (req, res) => {
-  // Fetch all orders
-  Schedule.find()
-    .then(orders => {
-      res.status(200).json({ orders });
-    })
-    .catch(error => {
-      res.status(500).json({ message: 'Error retrievving orders', error: error.message });
-    });
+
+module.exports.getAllSchedule = async (req, res) => {
+  try {
+    // Fetch all schedules and populate product details
+    const schedules = await Schedule.find()
+      .populate('scheduleOrdered.productId', 'name category amount number');
+
+    res.status(200).json({ schedules });
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving schedules', error: error.message });
+  }
 };

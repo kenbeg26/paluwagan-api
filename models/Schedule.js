@@ -1,28 +1,17 @@
 // Dependency
-
 const mongoose = require('mongoose');
 
 const scheduleSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // optional if you have a User model
     required: [true, 'User Id is Required']
   },
   scheduleOrdered: [{
     productId: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product', // Reference Product model
       required: [true, 'Product ID is required']
-    },
-    name: {
-      type: String,
-      required: [true, 'Product name is required']
-    },
-    amount: {
-      type: Number,
-      required: [true, 'Product amount is required']
-    },
-    number: {
-      type: Number,
-      required: [true, 'Number is required']
     },
     status: {
       type: String,
