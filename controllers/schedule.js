@@ -91,3 +91,24 @@ module.exports.getAllSchedule = async (req, res) => {
     res.status(500).json({ message: 'Error retrieving schedules', error: error.message });
   }
 };
+
+// get single user schedule
+module.exports.getSchedule = async (req, res) => {
+  try {
+    // req.user should come from your auth middleware (e.g., decoded JWT)
+    const userId = req.user.id || req.user._id;
+
+    const mySchedule = await Schedule.find({ userId })
+      .populate('scheduleOrdered.productId', 'name price color') // populate product details if needed
+      .exec();
+
+    if (!mySchedule || mySchedule.length === 0) {
+      return res.status(404).json({ message: 'No schedule found for this user.' });
+    }
+
+    res.status(200).json(mySchedule);
+  } catch (err) {
+    console.error('Error fetching schedule:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
