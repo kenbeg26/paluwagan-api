@@ -10,6 +10,6 @@ router.get("/get-schedule", verify, scheduleController.getSchedule);
 
 router.post("/pick-schedule", verify, scheduleController.pickSchedule);
 
-router.get("/get-all-schedule", verify, scheduleController.getAllSchedule);
+router.get("/get-all-schedule", scheduleController.getAllSchedule);
 
 module.exports = router;

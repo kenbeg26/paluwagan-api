@@ -82,15 +82,20 @@ module.exports.pickSchedule = async (req, res) => {
 
 module.exports.getAllSchedule = async (req, res) => {
   try {
-    // Fetch all schedules and populate product details
     const schedules = await Schedule.find()
-      .populate('scheduleOrdered.productId', 'name category amount number');
+      .populate("userId", "codename") // <-- get codename from User
+      .populate("scheduleOrdered.productId", "name category amount number"); 
 
-    res.status(200).json({ schedules });
+    res.status(200).json(schedules);
   } catch (error) {
-    res.status(500).json({ message: 'Error retrieving schedules', error: error.message });
+    res.status(500).json({
+      message: "Error retrieving schedules",
+      error: error.message,
+    });
   }
 };
+
+
 
 // get single user schedule
 module.exports.getSchedule = async (req, res) => {
