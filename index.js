@@ -27,7 +27,9 @@ app.use(cors());
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_STRING);
-mongoose.connection.once("open", () => console.log("Now connected to MongoDB Atlas."));
+mongoose.connection.once("open", () =>
+  console.log("Now connected to MongoDB Atlas.")
+);
 
 // Routes
 app.use("/users", userRoutes);
@@ -35,21 +37,46 @@ app.use("/product", productRoutes);
 app.use("/schedule", scheduleRoutes);
 
 // Socket.IO events
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   console.log("A user connected:", socket.id);
 
-  // Send chat history on connection
-  ChatMessage.find().sort({ timestamp: 1 }).limit(50).then(messages => {
+  // Send chat history (populate codename)
+  try {
+    const messages = await ChatMessage.find()
+      .populate("user", "codename")
+      .sort({ timestamp: 1 })
+      .limit(50);
+
     socket.emit("chatHistory", messages);
-  });
+  } catch (err) {
+    console.error("Error fetching chat history:", err);
+  }
 
   // Listen for new messages
   socket.on("sendMessage", async (data) => {
-    const newMessage = new ChatMessage(data);
-    await newMessage.save();
+    try {
+      // ✅ Only allow if userId exists
+      if (!data.user) {
+        console.warn("Blocked message without user ID");
+        socket.emit("errorMessage", "You must be logged in to chat.");
+        return;
+      }
 
-    // Broadcast to all users
-    io.emit("receiveMessage", newMessage);
+      // Save the new message
+      const newMessage = new ChatMessage({
+        user: data.user, // expecting ObjectId of logged-in user
+        message: data.message,
+      });
+
+      await newMessage.save();
+
+      // Populate codename before broadcasting
+      const populatedMessage = await newMessage.populate("user", "codename");
+
+      io.emit("receiveMessage", populatedMessage);
+    } catch (err) {
+      console.error("Error saving message:", err);
+    }
   });
 
   socket.on("disconnect", () => {
