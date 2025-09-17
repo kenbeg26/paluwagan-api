@@ -1,8 +1,10 @@
+// Index.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
 const ChatMessage = require("./models/ChatMessage");
 
 // Routes
@@ -13,10 +15,10 @@ const scheduleRoutes = require("./routes/schedule");
 require("dotenv").config();
 
 const app = express();
-const server = http.createServer(app); // wrap express in http server
+const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // your React app
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"],
   },
 });
@@ -36,11 +38,25 @@ app.use("/users", userRoutes);
 app.use("/product", productRoutes);
 app.use("/schedule", scheduleRoutes);
 
-// Socket.IO events
-io.on("connection", async (socket) => {
-  console.log("A user connected:", socket.id);
+// ✅ Socket.IO with JWT auth
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error("Authentication error: No token"));
 
-  // Send chat history (populate codename)
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.user = decoded; // e.g., { _id, codename }
+    next();
+  } catch (err) {
+    console.error("JWT verification failed:", err);
+    next(new Error("Authentication error: Invalid token"));
+  }
+});
+
+io.on("connection", async (socket) => {
+  console.log("User connected:", socket.id, "->", socket.user.codename);
+
+  // Send chat history
   try {
     const messages = await ChatMessage.find()
       .populate("user", "codename")
@@ -55,24 +71,14 @@ io.on("connection", async (socket) => {
   // Listen for new messages
   socket.on("sendMessage", async (data) => {
     try {
-      // ✅ Only allow if userId exists
-      if (!data.user) {
-        console.warn("Blocked message without user ID");
-        socket.emit("errorMessage", "You must be logged in to chat.");
-        return;
-      }
-
-      // Save the new message
       const newMessage = new ChatMessage({
-        user: data.user, // expecting ObjectId of logged-in user
+        user: socket.user._id, // ✅ from JWT
         message: data.message,
       });
 
       await newMessage.save();
 
-      // Populate codename before broadcasting
       const populatedMessage = await newMessage.populate("user", "codename");
-
       io.emit("receiveMessage", populatedMessage);
     } catch (err) {
       console.error("Error saving message:", err);
