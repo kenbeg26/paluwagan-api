@@ -4,11 +4,11 @@ require('dotenv').config();
 
 module.exports.createAccessToken = (user) => {
   const data = {
-    id: user._id,
+    _id: user._id, // This must be _id, not id
     codename: user.codename,
     isAdmin: user.isAdmin
   };
-
+  console.log("Creating token with data:", data); // Debug log
   return jwt.sign(data, process.env.AUTH_SECRET_KEY);
 };
 

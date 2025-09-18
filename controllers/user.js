@@ -54,15 +54,23 @@ module.exports.loginUser = (req, res) => {
 // User details
 module.exports.getProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // Extract user ID from token
-    const user = await User.findById(userId).select("-password"); // Exclude password field
+    console.log("Request user object:", req.user); // Debug log
+    
+    // Use req.user._id instead of req.user.id
+    const userId = req.user._id; // JWT stores it as _id
+    console.log("Looking for user ID:", userId);
+    
+    const user = await User.findById(userId).select("-password");
 
     if (!user) {
+      console.log("User not found for ID:", userId);
       return res.status(404).json({ message: "User not found" });
     }
 
+    console.log("User found:", user.codename);
     return res.status(200).json({ user });
   } catch (error) {
+    console.error("Error in getProfile:", error);
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
