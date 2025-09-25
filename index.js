@@ -57,7 +57,10 @@ io.use((socket, next) => {
   try {
     const decoded = jwt.verify(token, process.env.AUTH_SECRET_KEY);
     console.log("Decoded token:", decoded); // Debug log
-    socket.user = decoded;
+    socket.user = {
+      _id: decoded._id, // Ensure this is included
+      codename: decoded.codename
+    };
     next();
   } catch (err) {
     console.error("Token verification error:", err);
@@ -91,6 +94,7 @@ io.on("connection", async (socket) => {
     const newMessage = new ChatMessage({
       user: socket.user._id,
       message: data.message,
+      timestamp: data.timestamp || new Date(), // use timestamp
     });
 
     console.log("Message to save:", newMessage);
@@ -98,8 +102,11 @@ io.on("connection", async (socket) => {
     await newMessage.save();
     console.log("Message saved successfully");
 
-    const populatedMessage = await newMessage.populate("user", "codename");
-    console.log("Populated message:", populatedMessage);
+    // Proper population
+    const populatedMessage = await ChatMessage.findById(newMessage._id)
+      .populate("user", "codename _id"); // Explicitly include _id
+    
+    console.log("Populated message user:", populatedMessage.user);
     
     io.emit("receiveMessage", populatedMessage);
   } catch (err) {
@@ -109,6 +116,14 @@ io.on("connection", async (socket) => {
       console.error("Validation errors:", err.errors);
     }
   }
+});
+
+  socket.on("userTyping", (codename) => {
+  socket.broadcast.emit("userTyping", codename);
+});
+
+socket.on("stopTyping", () => {
+  socket.broadcast.emit("stopTyping");
 });
 
   socket.on("disconnect", () => {

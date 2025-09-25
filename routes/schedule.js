@@ -12,4 +12,6 @@ router.post("/pick-schedule", verify, scheduleController.pickSchedule);
 
 router.get("/get-all-schedule", verify, scheduleController.getAllSchedule);
 
+router.patch("/paid", verify, scheduleController.paidSchedule);
+
 module.exports = router;

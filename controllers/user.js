@@ -76,17 +76,31 @@ module.exports.getProfile = async (req, res) => {
 };
 
 // Set user as active
+// Toggle user active status
 module.exports.setUserActive = (req, res) => {
-  User.findByIdAndUpdate(req.params.userId, { isActive: true }, { new: true })
+  User.findById(req.params.userId)
     .then(user => {
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      res.status(200).json({ success: true, message: "User activated successfully" });
 
+      // Toggle isActive
+      user.isActive = !user.isActive;
+
+      return user.save();
+    })
+    .then(updatedUser => {
+      res.status(200).json({
+        success: true,
+        message: updatedUser.isActive 
+          ? "User activated successfully" 
+          : "User deactivated successfully",
+        user: updatedUser
+      });
     })
     .catch(error => errorHandler(error, req, res));
-}
+};
+
 
 // Retrieve all Users (Admin only)
 module.exports.getAllUser = (req, res) => {
