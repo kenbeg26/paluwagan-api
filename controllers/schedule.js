@@ -179,33 +179,33 @@ module.exports.paidSchedule = async (req, res) => {
 // @desc    Update a schedule
 // @route   PATCH /scheduleId/update
 // @access  Admin only (verify & verifyAdmin middleware)
+// controllers/scheduleController.js
 module.exports.updateSchedule = async (req, res) => {
   const { scheduleId } = req.params;
-  const updates = req.body;
+  const { userId, status, isActive, paymentStatus } = req.body;
 
   try {
-    // Find schedule by ID
     const schedule = await Schedule.findById(scheduleId);
     if (!schedule) {
       return res.status(404).json({ message: "Schedule not found" });
     }
 
-    // Dynamically update fields, including userId
-    Object.keys(updates).forEach((key) => {
-      schedule[key] = updates[key];
-    });
+    // ✅ Update only specific fields
+    if (userId) schedule.userId = userId;
+    if (status) schedule.status = status;
+    if (typeof isActive !== "undefined") schedule.isActive = isActive;
 
-    // Save the updated schedule
+    // ✅ Handle nested paymentStatus safely
+    if (paymentStatus && schedule.scheduleOrdered?.[0]?.payments?.[0]) {
+      schedule.scheduleOrdered[0].payments[0].status = paymentStatus;
+    }
+
     const updatedSchedule = await schedule.save();
-
-    res.status(200).json({
-      message: "Schedule updated successfully",
-      schedule: updatedSchedule,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.json(updatedSchedule);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating schedule", error: err });
   }
 };
+
 
 
