@@ -42,6 +42,10 @@ const scheduleSchema = new mongoose.Schema({
     default: "pending",
     enum: ["pending", "settled"],
   },
+  isActive: {
+    type: Boolean,
+    default: false
+  },
 });
 
 // 🔹 Virtual field: count how many users paid per product

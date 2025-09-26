@@ -36,7 +36,6 @@ module.exports.addProduct = (req, res) => {
 module.exports.getAllProducts = (req, res) => {
   Product.find({})
     .then(products => {
-      console.log("Products found: ", products);
       res.status(200).json(products);
     })
     .catch(error => errorHandler(error, req, res));
