@@ -11,6 +11,7 @@ const ChatMessage = require("./models/ChatMessage");
 const userRoutes = require("./routes/user");
 const productRoutes = require("./routes/product");
 const scheduleRoutes = require("./routes/schedule");
+const quotesRoutes = require("./routes/quotes");
 
 require("dotenv").config();
 
@@ -44,6 +45,7 @@ mongoose.connection.on('error', err => {
 app.use("/users", userRoutes);
 app.use("/product", productRoutes);
 app.use("/schedule", scheduleRoutes);
+app.use("/quotes", quotesRoutes);
 
 // ✅ Socket.IO with JWT auth
 io.use((socket, next) => {
