@@ -133,20 +133,23 @@ module.exports.paidSchedule = async (req, res) => {
       return res.status(400).json({ error: "scheduleId and productId are required" });
     }
 
-    const schedule = await Schedule.findById(scheduleId);
+    const schedule = await Schedule.findById(scheduleId)
+      .populate("scheduleOrdered.productId")
+      .populate("userId"); // so we get product name + user info
+
     if (!schedule) {
       return res.status(404).json({ error: "Schedule not found" });
     }
 
     const product = schedule.scheduleOrdered.find(
-      (p) => p.productId.toString() === productId.toString()
+      (p) => p.productId._id.toString() === productId.toString()
     );
     if (!product) {
       return res.status(404).json({ error: "Product not found in schedule" });
     }
 
+    // find or create payment record
     let payment = product.payments.find((p) => p.userId.toString() === userId.toString());
-
     if (!payment) {
       product.payments.push({
         userId,
@@ -160,19 +163,42 @@ module.exports.paidSchedule = async (req, res) => {
 
     await schedule.save();
 
+    // count paid users for this product
     const paidCount = product.payments.filter((p) => p.status === "paid").length;
+
+    // build chat message
+    const chatMessage = `User ${req.user.codename} paid ₱${product.productId.amount.toLocaleString()} for the month of ${product.productId.name} (${paidCount} user${paidCount !== 1 ? "s" : ""} paid)`;
+
+    // save chat message in DB
+    const Chat = require("../models/Chat");
+    const newMessage = await Chat.create({
+      user: userId,
+      message: chatMessage,
+      scheduleId,
+      timestamp: new Date(),
+    });
+
+    // emit to sockets (req.io comes from middleware that attaches io to req)
+    if (req.io) {
+      req.io.emit("receiveMessage", {
+        ...newMessage.toObject(),
+        user: { codename: req.user.codename },
+      });
+    }
 
     res.json({
       message: "Payment updated successfully",
       scheduleId,
       productId,
       paidCount,
+      chatMessage,
     });
   } catch (error) {
     console.error("Error in paidSchedule:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 //update schedule
 
