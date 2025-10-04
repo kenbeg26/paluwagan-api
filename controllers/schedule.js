@@ -124,32 +124,17 @@ module.exports.getSchedule = async (req, res) => {
 /**
  * Mark specific product as paid by the logged-in user
  */
+// controllers/scheduleController.js
+
 module.exports.paidSchedule = async (req, res) => {
   try {
     const { scheduleId, productId } = req.body;
     const userId = req.user._id;
 
-    if (!scheduleId || !productId) {
-      return res.status(400).json({ error: "scheduleId and productId are required" });
-    }
+    // ... find schedule & product ...
 
-    const schedule = await Schedule.findById(scheduleId)
-      .populate("scheduleOrdered.productId")
-      .populate("userId"); // so we get product name + user info
-
-    if (!schedule) {
-      return res.status(404).json({ error: "Schedule not found" });
-    }
-
-    const product = schedule.scheduleOrdered.find(
-      (p) => p.productId._id.toString() === productId.toString()
-    );
-    if (!product) {
-      return res.status(404).json({ error: "Product not found in schedule" });
-    }
-
-    // find or create payment record
-    let payment = product.payments.find((p) => p.userId.toString() === userId.toString());
+    // Mark as paid (or update)
+    let payment = product.payments.find(p => p.userId.toString() === userId.toString());
     if (!payment) {
       product.payments.push({
         userId,
@@ -163,13 +148,11 @@ module.exports.paidSchedule = async (req, res) => {
 
     await schedule.save();
 
-    // count paid users for this product
-    const paidCount = product.payments.filter((p) => p.status === "paid").length;
+    const paidCount = product.payments.filter(p => p.status === "paid").length;
 
-    // build chat message
-    const chatMessage = `User ${req.user.codename} paid ₱${product.productId.amount.toLocaleString()} for the month of ${product.productId.name} (${paidCount} user${paidCount !== 1 ? "s" : ""} paid)`;
+    // ✅ Chat message
+    const chatMessage = `${req.user.codename} paid ₱${product.productId.amount.toLocaleString()} for the month of ${product.productId.name}`;
 
-    // save chat message in DB
     const Chat = require("../models/Chat");
     const newMessage = await Chat.create({
       user: userId,
@@ -178,7 +161,7 @@ module.exports.paidSchedule = async (req, res) => {
       timestamp: new Date(),
     });
 
-    // emit to sockets (req.io comes from middleware that attaches io to req)
+    // ✅ Push real-time via socket.io
     if (req.io) {
       req.io.emit("receiveMessage", {
         ...newMessage.toObject(),
@@ -188,9 +171,6 @@ module.exports.paidSchedule = async (req, res) => {
 
     res.json({
       message: "Payment updated successfully",
-      scheduleId,
-      productId,
-      paidCount,
       chatMessage,
     });
   } catch (error) {
@@ -198,6 +178,7 @@ module.exports.paidSchedule = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 
 //update schedule
