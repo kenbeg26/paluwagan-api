@@ -12,7 +12,7 @@ router.post("/pick-schedule", verify, scheduleController.pickSchedule);
 
 router.get("/get-all-schedule", verify, scheduleController.getAllSchedule);
 
-router.patch("/paid", verify, scheduleController.paidSchedule);
+router.post("/paid", verify, scheduleController.paidSchedule);
 
 router.patch("/:scheduleId/update", verify, verifyAdmin, scheduleController.updateSchedule);
 

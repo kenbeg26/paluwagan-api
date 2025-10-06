@@ -131,10 +131,24 @@ module.exports.paidSchedule = async (req, res) => {
     const { scheduleId, productId } = req.body;
     const userId = req.user._id;
 
-    // ... find schedule & product ...
+    // 1. Find schedule with product populated
+    const schedule = await Schedule.findById(scheduleId)
+      .populate("scheduleOrdered.productId", "name amount number")
+      .exec();
 
-    // Mark as paid (or update)
-    let payment = product.payments.find(p => p.userId.toString() === userId.toString());
+    if (!schedule) {
+      return res.status(404).json({ message: "Schedule not found" });
+    }
+
+    const product = schedule.scheduleOrdered.find(
+      (p) => p.productId._id.toString() === productId
+    );
+    if (!product) {
+      return res.status(404).json({ message: "Product not found in schedule" });
+    }
+
+    // 2. Update or add payment
+    let payment = product.payments.find((p) => p.userId.toString() === userId.toString());
     if (!payment) {
       product.payments.push({
         userId,
@@ -148,30 +162,30 @@ module.exports.paidSchedule = async (req, res) => {
 
     await schedule.save();
 
-    const paidCount = product.payments.filter(p => p.status === "paid").length;
+    // 3. Count how many users paid
+    const paidCount = product.payments.filter((p) => p.status === "paid").length;
 
-    // ✅ Chat message
-    const chatMessage = `${req.user.codename} paid ₱${product.productId.amount.toLocaleString()} for the month of ${product.productId.name}`;
+    // 4. Build chat message
+    const chatMessage = `${req.user.codename} has paid ₱${product.productId.amount.toLocaleString()} for ${product.productId.name} (${paidCount} user${paidCount !== 1 ? "s" : ""} paid)`;
 
-    const Chat = require("../models/Chat");
-    const newMessage = await Chat.create({
+    // 5. Save message to DB
+    const newMessage = new ChatMessage({
       user: userId,
       message: chatMessage,
-      scheduleId,
       timestamp: new Date(),
     });
+    await newMessage.save();
 
-    // ✅ Push real-time via socket.io
+    // 6. Emit to all connected clients
     if (req.io) {
-      req.io.emit("receiveMessage", {
-        ...newMessage.toObject(),
-        user: { codename: req.user.codename },
-      });
+      const populatedMessage = await ChatMessage.findById(newMessage._id).populate("user", "codename _id");
+      req.io.emit("receiveMessage", populatedMessage);
     }
 
     res.json({
       message: "Payment updated successfully",
       chatMessage,
+      paidCount,
     });
   } catch (error) {
     console.error("Error in paidSchedule:", error);
