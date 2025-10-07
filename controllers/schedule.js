@@ -2,6 +2,7 @@
 const mongoose = require("mongoose");
 const Schedule = require("../models/Schedule");
 const Product = require("../models/Product");
+const ChatMessage = require("../models/ChatMessage");
 const auth = require("../auth");
 const { errorHandler } = auth;
 
@@ -166,7 +167,7 @@ module.exports.paidSchedule = async (req, res) => {
     const paidCount = product.payments.filter((p) => p.status === "paid").length;
 
     // 4. Build chat message
-    const chatMessage = `${req.user.codename} has paid ₱${product.productId.amount.toLocaleString()} for ${product.productId.name} (${paidCount} user${paidCount !== 1 ? "s" : ""} paid)`;
+    const chatMessage = `${req.user.codename.charAt(0).toUpperCase() + req.user.codename.slice(1)} has paid ₱10,000.00 for ${product.productId.name} (${paidCount} kaluwag member${paidCount !== 1 ? "s" : ""} paid)`;
 
     // 5. Save message to DB
     const newMessage = new ChatMessage({
