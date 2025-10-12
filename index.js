@@ -6,6 +6,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const ChatMessage = require("./models/ChatMessage");
+require("dotenv").config();
 
 // Routes
 const userRoutes = require("./routes/user");
@@ -13,66 +14,81 @@ const productRoutes = require("./routes/product");
 const scheduleRoutes = require("./routes/schedule");
 const quotesRoutes = require("./routes/quotes");
 
-require("dotenv").config();
-
 const app = express();
 const server = http.createServer(app);
+
+// ✅ Allowed origins (local + your deployed frontends)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://paluwagan-app.vercel.app",
+  "https://paluwagan-app-git-master-john-kenneths-projects.vercel.app",
+  "https://paluwagan-2w9n6rmt9-john-kenneths-projects.vercel.app",
+];
+
+// ✅ Express CORS middleware
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
+
+app.use(express.json());
+
+// ✅ Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
 
-// Middleware
-app.use(express.json());
-app.use(cors());
+// ✅ MongoDB connection
+mongoose
+  .connect(process.env.MONGODB_STRING, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// MongoDB connection
-// MongoDB connection with better error handling
-mongoose.connect(process.env.MONGODB_STRING, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("Connected to MongoDB Atlas"))
-.catch(err => console.error("MongoDB connection error:", err));
-
-mongoose.connection.on('error', err => {
-  console.error('MongoDB connection error:', err);
+mongoose.connection.on("error", (err) => {
+  console.error("MongoDB connection error:", err);
 });
 
-// Routes
+// ✅ Routes
 app.use("/users", userRoutes);
 app.use("/product", productRoutes);
 app.use("/schedule", scheduleRoutes);
 app.use("/quotes", quotesRoutes);
 
-// ✅ Socket.IO with JWT auth
+// ✅ Socket.IO JWT Authentication
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
-  console.log("Token received:", token); // Debug log
-  
+  console.log("🔑 Token received:", token);
+
   if (!token) {
     return next(new Error("Authentication error: No token provided"));
   }
 
   try {
     const decoded = jwt.verify(token, process.env.AUTH_SECRET_KEY);
-    console.log("Decoded token:", decoded); // Debug log
+    console.log("✅ Decoded token:", decoded);
+
     socket.user = {
-      _id: decoded._id, // Ensure this is included
-      codename: decoded.codename
+      _id: decoded._id,
+      codename: decoded.codename,
     };
     next();
   } catch (err) {
-    console.error("Token verification error:", err);
+    console.error("❌ Token verification error:", err);
     return next(new Error("Authentication error: Invalid token"));
   }
 });
 
-
+// ✅ Socket.IO Events
 io.on("connection", async (socket) => {
-  console.log("User connected:", socket.id, "->", socket.user.codename);
+  console.log("🟢 User connected:", socket.id, "->", socket.user.codename);
 
   // Send chat history
   try {
@@ -89,52 +105,49 @@ io.on("connection", async (socket) => {
 
   // Listen for new messages
   socket.on("sendMessage", async (data) => {
-  console.log("Received message:", data);
-  console.log("User from socket:", socket.user);
-  
-  try {
-    const newMessage = new ChatMessage({
-      user: socket.user._id,
-      message: data.message,
-      timestamp: data.timestamp || new Date(), // use timestamp
-    });
+    console.log("📩 Received message:", data);
+    console.log("User from socket:", socket.user);
 
-    console.log("Message to save:", newMessage);
-    
-    await newMessage.save();
-    console.log("Message saved successfully");
+    try {
+      const newMessage = new ChatMessage({
+        user: socket.user._id,
+        message: data.message,
+        timestamp: data.timestamp || new Date(),
+      });
 
-    // Proper population
-    const populatedMessage = await ChatMessage.findById(newMessage._id)
-      .populate("user", "codename _id"); // Explicitly include _id
-    
-    console.log("Populated message user:", populatedMessage.user);
-    
-    io.emit("receiveMessage", populatedMessage);
-  } catch (err) {
-    console.error("Error saving message:", err);
-    // Log specific error details
-    if (err.name === 'ValidationError') {
-      console.error("Validation errors:", err.errors);
+      await newMessage.save();
+      console.log("✅ Message saved successfully");
+
+      const populatedMessage = await ChatMessage.findById(newMessage._id).populate(
+        "user",
+        "codename _id"
+      );
+
+      io.emit("receiveMessage", populatedMessage);
+    } catch (err) {
+      console.error("❌ Error saving message:", err);
+      if (err.name === "ValidationError") {
+        console.error("Validation errors:", err.errors);
+      }
     }
-  }
-});
+  });
 
+  // Typing indicators
   socket.on("userTyping", (codename) => {
-  socket.broadcast.emit("userTyping", codename);
-});
+    socket.broadcast.emit("userTyping", codename);
+  });
 
-socket.on("stopTyping", () => {
-  socket.broadcast.emit("stopTyping");
-});
+  socket.on("stopTyping", () => {
+    socket.broadcast.emit("stopTyping");
+  });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    console.log("🔴 User disconnected:", socket.id);
   });
 });
 
-// Start server
+// ✅ Start server
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-  console.log(`API is now online on port ${PORT}`);
+  console.log(`🚀 API is now online on port ${PORT}`);
 });
